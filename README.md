@@ -2,6 +2,14 @@
 
 A proof-of-concept tokenization platform for securely handling and processing sensitive data with multi-tenant support and MySQL persistence.
 
+
+https://localhost:7211/swagger/index.html
+
+![image](https://github.com/user-attachments/assets/a9424792-0b7f-4b23-8450-21a4ab3587b9)
+
+![image](https://github.com/user-attachments/assets/a5b1a2c7-880b-4b2f-b631-534b563b2cc3)
+
+
 ## Features
 
 - Tokenize sensitive data
