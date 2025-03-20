@@ -90,19 +90,20 @@ Regular tenants cannot access the tenant management endpoints. Only tenants with
 
 ### Setting Up an Admin Tenant
 
-Admin tenants can be configured via:
+Admin tenants are automatically created during the database initialization process:
 
-1. **Database**: Using the `seedtenant.sql` script to create an admin tenant
-2. **Configuration**: In `appsettings.json` by setting the `IsAdmin` property to `true` for a tenant
+1. **Database Initialization**: The system creates an admin tenant with the credentials specified in the `seedtenant.sql` script.
+2. **Default Admin Credentials**: By default, the system creates an admin tenant with the following credentials:
+   - ID: `admin-tenant`
+   - API Key: `admin-api-key-secure`
 
-```json
-{
-  "Id": "admin-tenant",
-  "Name": "System Administrator",
-  "ApiKey": "admin-api-key-secure",
-  "IsAdmin": true
-}
+You can use these credentials to authenticate with the system and manage other tenants.
+
 ```
+X-API-Key: admin-api-key-secure
+```
+
+For security in production environments, you should change this default API key after initial setup.
 
 ## Tenant Management
 
@@ -253,3 +254,72 @@ When setting up the database, ensure that your column types match the expected C
 4. API will be available at `https://localhost:7xxx/api/tokens`
 5. Swagger documentation available at `https://localhost:7xxx/swagger`
 6. Manage tenants through the `/api/tenants` endpoints
+
+## Source Control Best Practices
+
+The project includes a `.gitignore` file configured for .NET projects. This file ensures that build artifacts, user-specific files, and sensitive information are not committed to source control.
+
+### Files and Directories Not to Commit
+
+The following files and directories are automatically excluded from Git:
+
+- `bin/` and `obj/` directories (build artifacts)
+- `.vs/` directory (Visual Studio cache)
+- `*.user` files (user-specific settings)
+- `appsettings.Development.json` (development configuration that may contain sensitive info)
+- NuGet package directories
+
+### Before Committing Changes
+
+Before committing your changes to source control, ensure:
+
+1. No sensitive information (like API keys or passwords) is hardcoded in the committed files
+2. Development-specific settings are kept in `appsettings.Development.json`
+3. All build artifacts have been cleaned (`dotnet clean` or manually removing `bin` and `obj` folders)
+
+### Database Initialization Scripts
+
+The database initialization scripts (`init.sql`, `seedtenant.sql`) are committed to source control as they are essential for setting up the application. However, in a production environment, you should:
+
+1. Change default credentials in these scripts
+2. Consider using a more secure method for managing database initialization
+3. Follow your organization's security policies for managing database credentials
+
+## Database Initialization and Seeding
+
+The Tokenization Service uses a combination of Entity Framework Core and SQL scripts to initialize and seed the database with initial data.
+
+### How Database Seeding Works
+
+1. **Initial Setup**:
+   - The system uses scripts in the project (`init.sql` and `seedtenant.sql`) to create the database schema and seed initial data
+   - Database tables (Tenants, Tokens, AuditLogs) are created automatically if they don't exist
+
+2. **Seeding Process Flow**:
+   - When the application starts, the `TenantInitializer` class handles database initialization
+   - It first checks if the database and required tables exist
+   - If tables don't exist, they are created using Entity Framework Core
+   - Then it checks for existing tenants in the database
+   - Finally, it migrates any tenants defined in `appsettings.json` (if any) to the database
+
+3. **Admin Tenant Creation**:
+   - The `seedtenant.sql` script specifically looks for an admin tenant with ID "admin-tenant"
+   - If not found, it automatically creates this admin tenant with:
+     - ID: `admin-tenant`
+     - Name: `System Administrator`
+     - API Key: `admin-api-key-secure`
+     - IsAdmin: `true`
+   - This ensures there's always an admin account available for tenant management
+
+4. **Execution Methods**:
+   - **Automatic**: The seeding process runs automatically on application startup
+   - **Manual**: You can manually execute the scripts using the provided PowerShell scripts:
+     - `setup-mysql-tenant.ps1`: Sets up the database and initial tenant
+     - `create-tenant.ps1`: Creates additional tenants as needed
+
+5. **Tenant Migration**:
+   - Any tenants defined in `appsettings.json` are migrated to the database on first run
+   - After migration, the database becomes the source of truth for tenant information
+   - This allows for backward compatibility with configuration-based tenant setup
+
+This automated seeding ensures that the system is immediately usable without manual database setup, while still allowing for customization by modifying the seed scripts or adding tenants through the API once the system is running.
